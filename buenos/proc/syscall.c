@@ -39,6 +39,50 @@
 #include "kernel/panic.h"
 #include "lib/libc.h"
 #include "kernel/assert.h"
+#include "drivers/gcd.h"
+
+int read_file(int file_handle, void *buffer, int length) {
+    device_t *dev;
+    gcd_t *gcd;
+    int len;
+
+    if (file_handle == FILEHANDLE_STDOUT ||
+	file_handle == FILEHANDLE_STDERR) {
+	return -1;
+    }
+    
+    dev = device_get(YAMS_TYPECODE_TTY, 0);
+    KERNEL_ASSERT(dev != NULL);
+
+    gcd = (gcd_t *)dev->generic_device;
+    KERNEL_ASSERT(gcd != NULL);
+
+    len = gcd->read(gcd, buffer, length);
+
+    return len;
+    
+}
+
+int write_file(int file_handle, const void *buffer, int length) {
+    device_t *dev;
+    gcd_t *gcd;
+    int len;
+
+    if (file_handle == FILEHANDLE_STDIN) {
+	return -1;
+    }
+    
+    dev = device_get(YAMS_TYPECODE_TTY, 0);
+    KERNEL_ASSERT(dev != NULL);
+
+    gcd = (gcd_t *)dev->generic_device;
+    KERNEL_ASSERT(gcd != NULL);
+
+    len = gcd->write(gcd, buffer, length);
+
+    return len;
+    
+}
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -49,6 +93,8 @@
  */
 void syscall_handle(context_t *user_context)
 {
+    int retval;
+
     /* When a syscall is executed in userland, register a0 contains
      * the number of the syscall. Registers a1, a2 and a3 contain the
      * arguments of the syscall. The userland code expects that after
@@ -62,6 +108,18 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_HALT:
         halt_kernel();
         break;
+    case SYSCALL_READ:
+	retval = read_file((int)user_context->cpu_regs[MIPS_REGISTER_A1], 
+			   (void *)user_context->cpu_regs[MIPS_REGISTER_A2], 
+			   (int)user_context->cpu_regs[MIPS_REGISTER_A3]);
+	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
+	break;
+    case SYSCALL_WRITE:
+	retval = write_file((int)user_context->cpu_regs[MIPS_REGISTER_A1], 
+			   (void *)user_context->cpu_regs[MIPS_REGISTER_A2], 
+			   (int)user_context->cpu_regs[MIPS_REGISTER_A3]);
+	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
+	break;
     default: 
         KERNEL_PANIC("Unhandled system call\n");
     }
