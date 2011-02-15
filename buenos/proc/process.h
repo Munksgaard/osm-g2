@@ -37,9 +37,44 @@
 #ifndef BUENOS_PROC_PROCESS
 #define BUENOS_PROC_PROCESS
 
+#include "lib/types.h"
+
+typedef enum {
+    PROCESS_FREE,
+    PROCESS_RUNNING,
+    PROCESS_ZOMBIE
+} process_state_t;
+ 
+/* process table data structure */
+typedef struct {
+    /* process state */
+    process_state_t state;     
+
+    /* process name */
+    const char **name;
+
+    /* return value */
+    uint32_t return_value; 
+
+    /* dummy alignment fill */
+    //uint32_t dummy_alignment_fill[4];
+} process_table_t;
+
 typedef int process_id_t;
 
 void process_start(const char *executable);
+
+void process_init(void);
+
+process_id_t process_spawn(const char *executable);
+
+int process_run(const char *executable);
+
+process_id_t process_get_current_process(void);
+
+void process_finish(int retval);
+
+uint32_t process_join(process_id_t pid);
 
 #define USERLAND_STACK_TOP 0x7fffeffc
 

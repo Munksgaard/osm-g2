@@ -40,16 +40,20 @@
 #include "kernel/assert.h"
 #include "kernel/interrupt.h"
 #include "kernel/config.h"
+#include "kernel/spinlock.h"
 #include "fs/vfs.h"
 #include "drivers/yams.h"
 #include "vm/vm.h"
 #include "vm/pagepool.h"
 
-
 /** @name Process startup
  *
  * This module contains a function to start a userland process.
  */
+
+process_table_t process_table[CONFIG_MAX_PROCESSES];
+
+spinlock_t process_table_slock;
 
 /**
  * Starts one userland process. The thread calling this function will
@@ -161,8 +165,7 @@ void process_start(const char *executable)
 	/* Make sure that the segment is in proper place. */
         KERNEL_ASSERT(elf.rw_vaddr >= PAGE_SIZE);
         KERNEL_ASSERT(vfs_seek(file, elf.rw_location) == VFS_OK);
-        KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)
-		      == (int)elf.rw_size);
+        KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)		      == (int)elf.rw_size);
     }
 
 
@@ -186,5 +189,115 @@ void process_start(const char *executable)
 
     KERNEL_PANIC("thread_goto_userland failed.");
 }
+
+void process_init(void) {
+    int i;
+
+    spinlock_reset(&process_table_slock);
+
+    for (i=0; i<CONFIG_MAX_PROCESSES; i++) {
+	process_table[i].state = PROCESS_FREE;
+	process_table[i].name = NULL;
+	process_table[i].return_value = 0;
+    }
+
+    
+}
+
+void _process_run(uint32_t executable) {
+    process_run((char *)executable);
+}
+
+process_id_t process_spawn(const char *executable) {
+    TID_t tid = thread_create(&_process_run, (uint32_t)executable);
+
+    return thread_get_thread_entry(tid)->process_id;
+}
+
+int process_run(const char *executable) {
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+
+    spinlock_acquire(&process_table_slock);
+
+    process_id_t pid = -1;
+
+    int i;
+
+    for (i=0; i<CONFIG_MAX_PROCESSES; i++) {
+	if (process_table[i].state == PROCESS_FREE) {
+	    pid = i;
+	    break;
+	}
+    }
+
+    if (pid < 0) {
+	return -1;
+    }
+
+    process_table[pid].state = PROCESS_RUNNING;
+
+    spinlock_release(&process_table_slock);
+
+    process_table[pid].name = &executable;
+
+    thread_get_current_thread_entry()->process_id = pid;
+
+    _interrupt_set_state(intr_status);
+
+    process_start(executable);
+
+    KERNEL_PANIC("process_start failed");
+
+    return -2;
+
+}
+
+process_id_t process_get_current_process(void) {
+    return thread_get_current_thread_entry()->process_id;
+}
+
+void process_finish(int retval) {
+    interrupt_status_t intr_status;
+    process_id_t pid = process_get_current_process();
+
+    intr_status = _interrupt_disable();
+
+    spinlock_acquire(&process_table_slock);
+
+    process_table[pid].return_value = retval;
+    process_table[pid].state = PROCESS_ZOMBIE;
+
+    spinlock_release(&process_table_slock);
+    
+    thread_finish();
+
+    _interrupt_set_state(intr_status);
+}
+
+uint32_t process_join(process_id_t pid) {
+    uint32_t retval;
+    interrupt_status_t intr_status;
+
+    KERNEL_ASSERT(process_table[pid].state != PROCESS_FREE);
+    
+    while(process_table[pid].state != PROCESS_ZOMBIE);
+
+    intr_status = _interrupt_disable();
+
+    spinlock_acquire(&process_table_slock);
+
+    retval = process_table[pid].return_value;
+    process_table[pid].state = PROCESS_FREE;
+
+    spinlock_release(&process_table_slock);
+    
+    _interrupt_set_state(intr_status);
+
+    return retval;
+    
+}
+
 
 /** @} */
