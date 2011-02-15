@@ -261,6 +261,7 @@ process_id_t process_get_current_process(void) {
 void process_finish(int retval) {
     interrupt_status_t intr_status;
     process_id_t pid = process_get_current_process();
+    thread_table_t *thread = thread_get_current_thread_entry();
 
     intr_status = _interrupt_disable();
 
@@ -270,17 +271,20 @@ void process_finish(int retval) {
     process_table[pid].state = PROCESS_ZOMBIE;
 
     spinlock_release(&process_table_slock);
-    
-    thread_finish();
-
     _interrupt_set_state(intr_status);
+
+    vm_destroy_pagetable(thread->pagetable);
+    thread->pagetable = NULL;
+    thread_finish();
 }
 
 uint32_t process_join(process_id_t pid) {
     uint32_t retval;
     interrupt_status_t intr_status;
 
-    KERNEL_ASSERT(process_table[pid].state != PROCESS_FREE);
+    if (process_table[pid].state != PROCESS_FREE) {
+	return -1;
+    }
     
     while(process_table[pid].state != PROCESS_ZOMBIE);
 

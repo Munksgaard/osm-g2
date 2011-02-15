@@ -35,6 +35,7 @@
  */
 #include "kernel/cswitch.h"
 #include "proc/syscall.h"
+#include "proc/process.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"
 #include "lib/libc.h"
@@ -84,6 +85,14 @@ int write_file(int file_handle, const void *buffer, int length) {
     
 }
 
+int exec (const char *filename) {
+    return process_spawn(filename);
+}
+
+int join (int pid) {
+    return process_join((process_id_t) pid);
+}
+
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.
@@ -118,6 +127,17 @@ void syscall_handle(context_t *user_context)
 	retval = write_file((int)user_context->cpu_regs[MIPS_REGISTER_A1], 
 			   (void *)user_context->cpu_regs[MIPS_REGISTER_A2], 
 			   (int)user_context->cpu_regs[MIPS_REGISTER_A3]);
+	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
+	break;
+    case SYSCALL_EXIT:
+	process_finish(user_context->cpu_regs[MIPS_REGISTER_A0]);
+	break;
+    case SYSCALL_EXEC:
+	retval = exec((char *)user_context->cpu_regs[MIPS_REGISTER_A0]);
+	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
+	break;
+    case SYSCALL_JOIN:
+	retval = join((int)user_context->cpu_regs[MIPS_REGISTER_A0]);
 	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
 	break;
     default: 
