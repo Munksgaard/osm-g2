@@ -41,6 +41,7 @@
 #include "kernel/interrupt.h"
 #include "kernel/config.h"
 #include "kernel/spinlock.h"
+#include "kernel/sleepq.h"
 #include "fs/vfs.h"
 #include "drivers/yams.h"
 #include "vm/vm.h"
@@ -204,21 +205,14 @@ void process_init(void) {
     
 }
 
-void _process_run(uint32_t executable) {
-    process_run((char *)executable);
+void _process_spawn(uint32_t executable) {
+    process_start((char *)executable);
 }
 
-process_id_t process_spawn(const char *executable) {
-    TID_t tid = thread_create(&_process_run, (uint32_t)executable);
-
-    return thread_get_thread_entry(tid)->process_id;
-}
-
-int process_run(const char *executable) {
+process_id_t process_run_init(const char *executable, TID_t tid) {
     interrupt_status_t intr_status;
 
     intr_status = _interrupt_disable();
-
     spinlock_acquire(&process_table_slock);
 
     process_id_t pid = -1;
@@ -233,18 +227,40 @@ int process_run(const char *executable) {
     }
 
     if (pid < 0) {
-	return -1;
+	return (process_id_t)-1;
     }
 
     process_table[pid].state = PROCESS_RUNNING;
 
     spinlock_release(&process_table_slock);
 
+    thread_get_thread_entry(tid)->process_id = pid;
+
     process_table[pid].name = &executable;
 
-    thread_get_current_thread_entry()->process_id = pid;
+    _interrupt_set_state(intr_status);
+
+    return pid;
+}
+
+process_id_t process_spawn(const char *executable) {
+    interrupt_status_t intr_status;
+
+    intr_status = _interrupt_disable();
+    
+    TID_t tid = thread_create(&_process_spawn, (uint32_t)executable);
+    process_id_t pid = process_run_init(executable, tid);
+    thread_run(tid);
 
     _interrupt_set_state(intr_status);
+
+    return pid;
+}
+
+int process_run(const char *executable) {
+    if (process_run_init(executable, thread_get_current_thread()) < 0) {
+	return -1;
+    }
 
     process_start(executable);
 
@@ -270,6 +286,8 @@ void process_finish(int retval) {
     process_table[pid].return_value = retval;
     process_table[pid].state = PROCESS_ZOMBIE;
 
+    sleepq_wake((void *)&process_table[pid]);
+
     spinlock_release(&process_table_slock);
     _interrupt_set_state(intr_status);
 
@@ -282,16 +300,20 @@ uint32_t process_join(process_id_t pid) {
     uint32_t retval;
     interrupt_status_t intr_status;
 
-    if (process_table[pid].state != PROCESS_FREE) {
+    if (process_table[pid].state == PROCESS_FREE) {
 	return -1;
     }
-    
-    while(process_table[pid].state != PROCESS_ZOMBIE);
 
     intr_status = _interrupt_disable();
-
     spinlock_acquire(&process_table_slock);
 
+    while(process_table[pid].state != PROCESS_ZOMBIE) {
+	sleepq_add((void *)&process_table[pid]);
+	spinlock_release(&process_table_slock);
+	thread_switch();
+	spinlock_acquire(&process_table_slock);
+    }
+    
     retval = process_table[pid].return_value;
     process_table[pid].state = PROCESS_FREE;
 

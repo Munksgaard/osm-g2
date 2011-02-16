@@ -130,14 +130,14 @@ void syscall_handle(context_t *user_context)
 	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
 	break;
     case SYSCALL_EXIT:
-	process_finish(user_context->cpu_regs[MIPS_REGISTER_A0]);
+	process_finish(user_context->cpu_regs[MIPS_REGISTER_A1]);
 	break;
     case SYSCALL_EXEC:
-	retval = exec((char *)user_context->cpu_regs[MIPS_REGISTER_A0]);
+	retval = exec((char *)user_context->cpu_regs[MIPS_REGISTER_A1]);
 	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
 	break;
     case SYSCALL_JOIN:
-	retval = join((int)user_context->cpu_regs[MIPS_REGISTER_A0]);
+	retval = join((int)user_context->cpu_regs[MIPS_REGISTER_A1]);
 	user_context->cpu_regs[MIPS_REGISTER_V0] = retval;
 	break;
     default: 
