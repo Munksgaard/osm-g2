@@ -89,7 +89,7 @@ int elf_parse_header(elf_info_t *elf, openfile_t file);
 #define EV_CURRENT 1
 
 /* Cast the identification string into uint32_t */
-#define EI_MAGIC(x) ((uint32_t)(x))
+#define EI_MAGIC(x) (*((uint32_t*)&(x)))
 /* ELF magic, "\177ELF", big-endian format */
 #define ELF_MAGIC 0x7f454c46
 
