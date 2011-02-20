@@ -1,0 +1,8 @@
+g2.pdf
+*.make
+*.d
+*.log
+*.aux
+*.swp
+*.fls
+*.temp
