@@ -166,7 +166,8 @@ void process_start(const char *executable)
 	/* Make sure that the segment is in proper place. */
         KERNEL_ASSERT(elf.rw_vaddr >= PAGE_SIZE);
         KERNEL_ASSERT(vfs_seek(file, elf.rw_location) == VFS_OK);
-        KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)		      == (int)elf.rw_size);
+        KERNEL_ASSERT(vfs_read(file, (void *)elf.rw_vaddr, elf.rw_size)
+		      == (int)elf.rw_size);
     }
 
 
@@ -197,9 +198,9 @@ void process_init(void) {
     spinlock_reset(&process_table_slock);
 
     for (i=0; i<CONFIG_MAX_PROCESSES; i++) {
-	process_table[i].state = PROCESS_FREE;
-	process_table[i].name = NULL;
-	process_table[i].return_value = 0;
+        process_table[i].state = PROCESS_FREE;
+        process_table[i].name = NULL;
+        process_table[i].return_value = 0;
     }
 
     
@@ -220,14 +221,14 @@ process_id_t process_run_init(const char *executable, TID_t tid) {
     int i;
 
     for (i=0; i<CONFIG_MAX_PROCESSES; i++) {
-	if (process_table[i].state == PROCESS_FREE) {
-	    pid = i;
-	    break;
-	}
+        if (process_table[i].state == PROCESS_FREE) {
+            pid = i;
+            break;
+        }
     }
 
     if (pid < 0) {
-	return (process_id_t)-1;
+        return (process_id_t)-1;
     }
 
     process_table[pid].state = PROCESS_RUNNING;
@@ -259,7 +260,7 @@ process_id_t process_spawn(const char *executable) {
 
 int process_run(const char *executable) {
     if (process_run_init(executable, thread_get_current_thread()) < 0) {
-	return -1;
+        return -1;
     }
 
     process_start(executable);
@@ -267,7 +268,6 @@ int process_run(const char *executable) {
     KERNEL_PANIC("process_start failed");
 
     return -2;
-
 }
 
 process_id_t process_get_current_process(void) {
@@ -301,17 +301,17 @@ uint32_t process_join(process_id_t pid) {
     interrupt_status_t intr_status;
 
     if (process_table[pid].state == PROCESS_FREE) {
-	return -1;
+        return -1;
     }
 
     intr_status = _interrupt_disable();
     spinlock_acquire(&process_table_slock);
 
     while(process_table[pid].state != PROCESS_ZOMBIE) {
-	sleepq_add((void *)&process_table[pid]);
-	spinlock_release(&process_table_slock);
-	thread_switch();
-	spinlock_acquire(&process_table_slock);
+        sleepq_add((void *)&process_table[pid]);
+        spinlock_release(&process_table_slock);
+        thread_switch();
+        spinlock_acquire(&process_table_slock);
     }
     
     retval = process_table[pid].return_value;
@@ -322,7 +322,6 @@ uint32_t process_join(process_id_t pid) {
     _interrupt_set_state(intr_status);
 
     return retval;
-    
 }
 
 
