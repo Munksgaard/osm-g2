@@ -2,7 +2,13 @@
 *.d
 *#
 buenos
-buenos.map
+*.map
 store.file
 fyams.harddisk1
+fyams.harddisk
 util/tfstool
+tests/halt
+tests/hw
+tests/calc
+tests/exec
+*.swp
