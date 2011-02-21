@@ -246,8 +246,6 @@ process_id_t process_spawn(const char *executable) {
 
     thread_run(tid);
 
-    thread_run(tid);
-
     return pid;
 }
 
