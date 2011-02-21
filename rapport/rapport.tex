@@ -1,0 +1,50 @@
+\documentclass [10pt,a4paper]{article}
+\usepackage[danish]{babel}
+\usepackage{a4wide}
+\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{fancyhdr}
+\usepackage{ucs}
+\usepackage{graphicx}
+
+\pagestyle{fancy}
+\fancyhead[LO]{Daniel Egeberg \& Philip Munksgaard}
+\fancyhead[RO]{OSM: G2}
+\fancyfoot[CO]{\thepage}
+
+
+\title{G2}
+\author{Daniel Egeberg \& Philip Munksgaard}
+\date{21. februar 2011}
+
+\begin{document}
+\maketitle
+
+\section*{Opgave 1} % {{{
+
+Til at repræsentere bruger-processer har vi valgt at lave \verb+struct+
+indeholdende følgende informationer:
+
+\begin{description}
+    \item[state:] Processens tilstand. Kan være én af følgende:
+        \begin{description}
+            \item[FREE:] Processen er ikke tilknyttet noget program.
+            \item[RUNNING:] Processen er tilknyttet et program, og kan køres
+            \item[ZOMBIE:] Processen har kørt færdig, men dets returværdi er
+                ikke blevet samlet op af et \verb+join+.
+        \end{description}
+    \item[name:] Processens filnavn.
+    \item[return\_value:] Returværdien for processen.
+\end{description}
+
+Disse gemmes i en tabel hvor indekset er processens ID.
+
+% }}}
+
+\section*{Opgave 2} % {{{
+
+% }}}
+
+\end{document}
