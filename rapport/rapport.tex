@@ -39,11 +39,35 @@ indeholdende følgende informationer:
     \item[return\_value:] Returværdien for processen.
 \end{description}
 
-Disse gemmes i en tabel hvor indekset er processens ID.
+Disse gemmes i en tabel hvor indekset er processens ID. Derudover
+bruger vi en spinlock til at sikre atomisk tilgang til tabellen og
+dens elementer.
+
+Vi har lavet en en-til-en mapning af vores tråde til vores
+brugerprocesser. Der kan altså kun være en brugerprocess per tråd. Vi
+har defineret en statisk øvre grænse for antallet af brugerprocesser i
+\verb+kernel/config+, men denne skal være sat lig den øvre grænse
+for tråde.
+
+Vi har desuden implementeret de foreslåede funktioner i
+\verb+process.c+. Som resultat af dette har vi ændret i funktionen
+\verb+init_startup_thread+, således at proces-tabellen bliver
+initialiseret og startprogrammet startes med \verb+process_run+
+istedet for \verb+process_start+.
+
+I \verb+process_spawn+ virker ved at vi først opretter en ny tråd med
+\verb+thread_create+. Dernæst opretter vi en ny process og sætter
+process-id'et i tråden til process-id'et for den nyoprettede process.
 
 % }}}
 
 \section*{Opgave 2} % {{{
+
+Vi har tilføjet håndtering af de forskellige systemkald, og med
+undtagelse af \verb+syscall_read+ og \verb+syscall_write+ har vi bare
+skrevet nogle wrappers i \verb+process/syscall.c+. Til at implementere
+systemkaldene for \verb+syscall_read+ og \verb+syscall_write+ har vi brugt
+\verb+drivers/gcd.h+ og lavet en \verb+gcd+ til IO.
 
 % }}}
 
