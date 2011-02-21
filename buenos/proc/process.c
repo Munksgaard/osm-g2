@@ -244,15 +244,10 @@ process_id_t process_run_init(const char *executable, TID_t tid) {
 }
 
 process_id_t process_spawn(const char *executable) {
-    interrupt_status_t intr_status;
-
-    intr_status = _interrupt_disable();
-    
     TID_t tid = thread_create(&_process_spawn, (uint32_t)executable);
     process_id_t pid = process_run_init(executable, tid);
-    thread_run(tid);
 
-    _interrupt_set_state(intr_status);
+    thread_run(tid);
 
     return pid;
 }
