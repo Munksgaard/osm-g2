@@ -1,8 +1,20 @@
+NAME	:= munksgaard-egeberg-g2
+
 all:
-	(cd rapport; make)
-	(cd buenos; make real-clean)
-	mkdir munksgaard-egeberg-g2
-	cp rapport/rapport.pdf munksgaard-egeberg-g2/munksgaard-egeberg-g2.pdf
-	cp -r buenos munksgaard-egeberg-g2
-	tar czf munksgaard-egeberg-g2.tar.gz munksgaard-egeberg-g2
-	rm -rf munksgaard-egeberg-g2
+	make -C rapport
+	make -C buenos real-clean
+	mkdir $(NAME)
+	cp rapport/rapport.pdf $(NAME)/$(NAME).pdf
+	cp -r buenos $(NAME)
+	tar czf $(NAME).tar.gz $(NAME)
+	rm -rf $(NAME)
+
+clean:
+	rm -rf $(NAME).tar.gz
+
+clean-all:
+	rm -rf $(NAME).tar.gz
+	rm -rf $(NAME)
+	make -C rapport clean
+	make -C buenos real-clean
+
