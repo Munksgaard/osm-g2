@@ -199,7 +199,6 @@ void process_init(void) {
 
     for (i=0; i<CONFIG_MAX_PROCESSES; i++) {
         process_table[i].state = PROCESS_FREE;
-        process_table[i].name = NULL;
         process_table[i].return_value = 0;
     }
 }
@@ -229,8 +228,9 @@ process_id_t process_run_init(const char *executable, TID_t tid) {
         return (process_id_t)-1;
     }
 
+    stringcopy(process_table[pid].name, executable, strlen(executable));
+
     process_table[pid].state = PROCESS_RUNNING;
-    process_table[pid].name = &executable;
 
     thread_get_thread_entry(tid)->process_id = pid;
 

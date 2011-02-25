@@ -38,6 +38,7 @@
 #define BUENOS_PROC_PROCESS
 
 #include "lib/types.h"
+#include "kernel/config.h"
 
 typedef enum {
     PROCESS_FREE,
@@ -51,13 +52,10 @@ typedef struct {
     process_state_t state;     
 
     /* process name */
-    const char **name;
+    char name[CONFIG_MAX_FILENAME_LENGTH];
 
     /* return value */
     uint32_t return_value; 
-
-    /* dummy alignment fill */
-    //uint32_t dummy_alignment_fill[4];
 } process_table_t;
 
 typedef int process_id_t;

@@ -38,6 +38,7 @@
 #define BUENOS_CONFIG_H
 
 #define CONFIG_MAX_PROCESSES 32
+#define CONFIG_MAX_FILENAME_LENGTH 100
 
 /* Define the maximum number of threads supported by the kernel 
  * Range from 2 (idle + init) to 256 (ASID size)
